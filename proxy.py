@@ -58,8 +58,8 @@ class Proxy:
             self.server_socket.bind((self.host, self.port))
         except socket.error:
             if self.verbosity >= 0:
-                print("Unable to bind to {}:{}, exiting.".format(self.host,
-                                                                 self.port))
+                print("Unable to bind to {}:{}, exiting.".format(
+                    self.host, self.port))
             exit(1)
 
     def _listen(self):
@@ -77,12 +77,16 @@ class Proxy:
         """
         Block until a new client connection has been made.
         """
+        if self.verbosity >= 1:
+            print("Only proxying connections "
+                  "with prefix: {}".format(self.prefix))
         while True:
             try:
                 # Blocking occurs here until a new client connection.
                 client_socket, client_address = self.server_socket.accept()
                 if self.verbosity >= 1:
-                    print("New client from: {}".format(client_address))
+                    print("New client connection from : {}".format(
+                        client_address))
                 self.client_request(client_socket, client_address)
                 client_socket.close()
             except KeyboardInterrupt:
