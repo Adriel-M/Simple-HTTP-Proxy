@@ -20,7 +20,7 @@ class Proxy:
         :param request_size_limit: how much to read from a socket
         :param reuseaddr: whether to reuse and address if it is occupied
         :param debug_level: -1 no messages, 0 regular messages,
-        1 connection messages, 2 socket messages
+            1 connection messages, 2 socket messages
         :type host: str
         :type port: int
         :type prefix: str
@@ -63,9 +63,8 @@ class Proxy:
             self.server_socket.bind((self.host, self.port))
         except socket.error:
             if self.debug_level >= 0:
-                print(
-                    "Unable to bind to {}:{}, exiting.".format(self.host,
-                                                               self.port))
+                print("Unable to bind to {}:{}, exiting.".format(self.host,
+                                                                 self.port))
             exit(1)
 
     def _listen(self):
@@ -137,31 +136,29 @@ class Proxy:
         """
         remote_connect_socket = \
             socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        remote_connect_socket.settimeout(2)
         remote_connect_socket.connect((remote_address, remote_port))
         remote_connect_socket.sendall(request)
         try:
             while True:
-                partial_read = \
-                    remote_connect_socket.recv(self.request_size_limit)
-                # Set non-blocking after first read. Catch when read is
-                # empty and declare connection to be closed
-                remote_connect_socket.setblocking(0)
-                if len(partial_read) == 0:
+                if self.debug_level >= 2:
+                    print("Received data from ('{}' , {})".format(
+                            remote_address, remote_port))
+                read = remote_connect_socket.recv(self.request_size_limit)
+                if len(read) == 0:
                     break
                 if self.debug_level >= 2:
-                    print(
-                        "Received data from ('{}' , {})".format(
-                            remote_address, remote_port))
                     print("Sending data to {}".format(client_address))
-                client_socket.send(partial_read)
+                client_socket.send(read)
             remote_connect_socket.close()
         except socket.error as e:
             err = e.args[0]
             # Connection has read all the data
-            if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
+            if err == "timed out":
                 remote_connect_socket.close()
             else:
-                print(e)
+                if self.debug_level >= 1:
+                    print(e)
                 exit(3)
 
     @staticmethod
@@ -186,6 +183,8 @@ class Proxy:
 
         :param url: an unseparated url
         :param prefix: prefix to remove from the url
+        :type url: str
+        :type prefix: str
         :return: domain and path
         :rtype: str, str
         """
@@ -209,7 +208,7 @@ class Proxy:
     def prepare_request(request, address, path):
         """
         Prepare the request by replacing url in the first line with the path
-        of the url, replace Host: <localaddress> with domain.
+        of the url, replace Host: <localaddress> with Host: <address>.
 
         :param request: request of the client
         :param address: external address to connect to
@@ -227,7 +226,7 @@ class Proxy:
         for line in decoded_request.split("\r\n"):
             if not rewritten_url:
                 first_line = line.split(' ')
-                # First line structured as {GET, POST} domain protocol
+                # First line structured as {GET, POST} address protocol
                 new_request = \
                     "{} {} {}".format(first_line[0], path, first_line[2])
                 rewritten_url = True
@@ -240,5 +239,5 @@ class Proxy:
 
 
 if __name__ == "__main__":
-    p = Proxy(HOST, PORT, prefix=PREFIX, debug_level=2)
+    p = Proxy(HOST, PORT, prefix=PREFIX)
     p.run()
