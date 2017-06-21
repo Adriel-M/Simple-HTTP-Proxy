@@ -1,15 +1,10 @@
 import socket
-import errno
-
-HOST = "localhost"
-PORT = 1234
-MAX_CONN = 5
-PREFIX = "/proxy/"
+import argparse
 
 
 class Proxy:
     def __init__(self, host, port, prefix="", max_connections=5,
-                 request_size_limit=4096, reuseaddr=True, debug_level=0):
+                 request_size_limit=4096, reuseaddr=True, verbosity=0):
         """
         Initialize a new Proxy class.
 
@@ -19,7 +14,7 @@ class Proxy:
         :param max_connections: max connections the proxy can have at a time
         :param request_size_limit: how much to read from a socket
         :param reuseaddr: whether to reuse and address if it is occupied
-        :param debug_level: -1 no messages, 0 regular messages,
+        :param verbosity: -1 no messages, 0 regular messages,
             1 connection messages, 2 socket messages
         :type host: str
         :type port: int
@@ -27,7 +22,7 @@ class Proxy:
         :type max_connections: int
         :type request_size_limit: int
         :type reuseaddr: bool
-        :type debug_level: int
+        :type verbosity: int
         """
         self.host = host
         self.port = port
@@ -35,7 +30,7 @@ class Proxy:
         self.max_connections = max_connections
         self.request_size_limit = request_size_limit
         self.reuseaddr = reuseaddr
-        self.debug_level = debug_level
+        self.verbosity = verbosity
         self.server_socket = None
 
     def run(self):
@@ -52,7 +47,7 @@ class Proxy:
         that was instantiated with the class.
         """
         try:
-            if self.debug_level >= 0:
+            if self.verbosity >= 0:
                 print("Binding to {}:{}".format(self.host, self.port))
             self.server_socket = \
                 socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,7 +57,7 @@ class Proxy:
                     socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server_socket.bind((self.host, self.port))
         except socket.error:
-            if self.debug_level >= 0:
+            if self.verbosity >= 0:
                 print("Unable to bind to {}:{}, exiting.".format(self.host,
                                                                  self.port))
             exit(1)
@@ -74,7 +69,7 @@ class Proxy:
         try:
             self.server_socket.listen(self.max_connections)
         except socket.error:
-            if self.debug_level >= 0:
+            if self.verbosity >= 0:
                 print("Unable to listen, exiting.")
             exit(2)
 
@@ -86,12 +81,12 @@ class Proxy:
             try:
                 # Blocking occurs here until a new client connection.
                 client_socket, client_address = self.server_socket.accept()
-                if self.debug_level >= 1:
+                if self.verbosity >= 1:
                     print("New client from: {}".format(client_address))
                 self.client_request(client_socket, client_address)
                 client_socket.close()
             except KeyboardInterrupt:
-                if self.debug_level >= 1:
+                if self.verbosity >= 1:
                     print("Keyboard interruption reached. Closing server.")
                 self.server_socket.close()
                 exit(0)
@@ -141,13 +136,13 @@ class Proxy:
         remote_connect_socket.sendall(request)
         try:
             while True:
-                if self.debug_level >= 2:
+                if self.verbosity >= 2:
                     print("Received data from ('{}' , {})".format(
                             remote_address, remote_port))
                 read = remote_connect_socket.recv(self.request_size_limit)
                 if len(read) == 0:
                     break
-                if self.debug_level >= 2:
+                if self.verbosity >= 2:
                     print("Sending data to {}".format(client_address))
                 client_socket.send(read)
             remote_connect_socket.close()
@@ -157,7 +152,7 @@ class Proxy:
             if err == "timed out":
                 remote_connect_socket.close()
             else:
-                if self.debug_level >= 1:
+                if self.verbosity >= 1:
                     print(e)
                 exit(3)
 
@@ -238,6 +233,38 @@ class Proxy:
         return str.encode(new_request)
 
 
+def main():
+    description = "Run a proxy server"
+    parser = argparse.ArgumentParser(description=description)
+    address_help = "Address to bind to. [Default: localhost]"
+    port_help = "Port to bind to. [Default: 8000]"
+    prefix_help = "Prefix to look for. [Default: /proxy/]"
+    max_conn_help = "Max number of client connections at a time. [Default: 5]"
+    size_limit_help = "Max size a network socket can read. [Default: 4096]"
+    verbosity_help = "-1 off, 0 normal, 1 connection messages, 2 socket " \
+                     "messages. [Default: 0]"
+    parser.add_argument("-a", "--address", help=address_help,
+                        default="localhost")
+    parser.add_argument("-p", "--port", type=int, help=port_help, default=8000)
+    parser.add_argument("-f", "--prefix", type=str, help=prefix_help,
+                        default="/proxy/")
+    parser.add_argument("-m", "--max_connections", type=int,
+                        help=max_conn_help,
+                        default=5)
+    parser.add_argument("-s", "--size_limit", type=int, help=size_limit_help,
+                        default=4096)
+    parser.add_argument("-v", "--verbosity", type=int, help=verbosity_help,
+                        default=0)
+    args = parser.parse_args()
+    address = args.address
+    port = args.port
+    prefix = args.prefix
+    max_connections = args.max_connections
+    size_limit = args.size_limit
+    verbosity = args.verbosity
+    proxy = Proxy(address, port, prefix, max_connections, size_limit,
+                  verbosity=verbosity)
+    proxy.run()
+
 if __name__ == "__main__":
-    p = Proxy(HOST, PORT, prefix=PREFIX)
-    p.run()
+    main()
