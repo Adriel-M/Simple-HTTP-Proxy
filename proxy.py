@@ -64,7 +64,7 @@ class Proxy:
 
     def _listen(self):
         """
-        Setup up server socket to listen for incoming connections.
+        Setup server socket to listen for incoming connections.
         """
         try:
             self.server_socket.listen(self.max_connections)
