@@ -234,7 +234,7 @@ class Proxy:
 
 
 def main():
-    description = "Run a proxy server"
+    description = "Run a simple HTTP proxy server."
     parser = argparse.ArgumentParser(description=description)
     address_help = "Address to bind to. [Default: localhost]"
     port_help = "Port to bind to. [Default: 8000]"
@@ -245,12 +245,12 @@ def main():
                      "messages. [Default: 0]"
     parser.add_argument("-a", "--address", help=address_help,
                         default="localhost")
-    parser.add_argument("-p", "--port", type=int, help=port_help, default=8000)
     parser.add_argument("-f", "--prefix", type=str, help=prefix_help,
                         default="/proxy/")
     parser.add_argument("-m", "--max_connections", type=int,
                         help=max_conn_help,
                         default=5)
+    parser.add_argument("-p", "--port", type=int, help=port_help, default=8000)
     parser.add_argument("-s", "--size_limit", type=int, help=size_limit_help,
                         default=4096)
     parser.add_argument("-v", "--verbosity", type=int, help=verbosity_help,
