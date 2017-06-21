@@ -14,7 +14,7 @@ Run a simple HTTP proxy server.
 optional arguments:
   -h, --help            show this help message and exit
   -a ADDRESS, --address ADDRESS
-                        Address to bind to. [Default: localhost]
+                        Address to bind to. [Default: ] (all interfaces)
   -f PREFIX, --prefix PREFIX
                         Prefix to look for. [Default: /proxy/]
   -m MAX_CONNECTIONS, --max_connections MAX_CONNECTIONS

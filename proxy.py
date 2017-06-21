@@ -240,7 +240,7 @@ class Proxy:
 def main():
     description = "Run a simple HTTP proxy server."
     parser = argparse.ArgumentParser(description=description)
-    address_help = "Address to bind to. [Default: all interfaces]"
+    address_help = "Address to bind to. [Default: ""] (all interfaces)"
     port_help = "Port to bind to. [Default: 8000]"
     prefix_help = "Prefix to look for. [Default: /proxy/]"
     max_conn_help = "Max number of client connections at a time. [Default: 5]"
